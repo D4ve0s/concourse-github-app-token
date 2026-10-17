@@ -1,7 +1,6 @@
 package eu.neufeldt.concoursegithubcredentials.in;
 
 import com.google.common.jimfs.Jimfs;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import eu.neufeldt.concoursegithubcredentials.GithubClient;
@@ -25,7 +24,6 @@ class InRequestTest {
     private final InRequest.Source source = new InRequest.Source(123, "private key", "tenjaa", null, null, null);
     private final Version version = new Version("someDate");
     private final InRequest inRequest = new InRequest(source, version, null);
-    private final Gson gson = new Gson();
     private FileSystem fileSystem;
     private GithubClient client;
 

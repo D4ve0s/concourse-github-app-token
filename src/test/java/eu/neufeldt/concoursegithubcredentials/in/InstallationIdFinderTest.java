@@ -2,7 +2,6 @@ package eu.neufeldt.concoursegithubcredentials.in;
 
 import eu.neufeldt.concoursegithubcredentials.GithubClient;
 import eu.neufeldt.concoursegithubcredentials.model.InstallationResponse;
-import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
