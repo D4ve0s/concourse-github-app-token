@@ -46,3 +46,21 @@ if [[ "$repo" != 'concourse-github-app-token' ]]; then
 fi
 
 echo "Testing IN successfully done"
+
+scopedInRequest="{\"source\":{\"appId\":${appId},\"user\":\"tenjaa\",\"privateKey\":\"${privateKey}\"},\"version\":{\"date\":\"some-date\"},\"params\":{\"repositories\":[\"concourse-github-app-token\"],\"permissions\":{\"contents\":\"read\"}}}"
+scopedInResponse=$(echo "${scopedInRequest}" | docker run -i "${image}" /opt/resource/in "/")
+
+if [[ "$scopedInResponse" != '{"version":{"date":"some-date"}}' ]]; then
+  echo "Invalid scopedInResponse: ${scopedInResponse}"
+  exit 1
+fi
+
+scopedContainerId=$(docker ps -a -q -l)
+docker cp "${scopedContainerId}:/token" ./scoped-token
+scopedRepo=$(curl -s -H "Accept: application/vnd.github.machine-man-preview+json" -H "Authorization: token $(cat scoped-token)" "https://api.github.com/installation/repositories" | jq -r '.repositories[0].name')
+if [[ "$scopedRepo" != 'concourse-github-app-token' ]]; then
+  echo "Invalid scopedRepo: ${scopedRepo}"
+  exit 1
+fi
+
+echo "Testing scoped IN successfully done"

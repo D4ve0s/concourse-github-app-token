@@ -30,6 +30,14 @@ resources:
       # OR
     org: my-org # get a token for an app installed to an org account
 
+    # Optional: downscope the installation token (least-privilege). Omit both to keep the app's full grants.
+    repositories: # restrict the token to these repos (must be installed for the app)
+    - repo-a
+    - repo-b
+    permissions: # restrict the token to these permission levels (read / write / admin)
+      contents: read
+      pull_requests: write
+
 jobs:
 - name: my-job
   plan:
@@ -46,6 +54,22 @@ jobs:
         TOKEN: ((.:token))
       run:
         path: env
+```
+
+### Scoping via `get` params (per-fetch)
+
+The same `repositories` / `permissions` keys can be supplied per `get` step instead of in `source:`. This is the idiomatic place for a *per-fetch* concern: one resource definition can mint differently-scoped tokens for different jobs without redefining the resource. `get` params take precedence over `source:` when both are set.
+
+```yaml
+jobs:
+- name: read-only-job
+  plan:
+  - get: github-token
+    params:
+      repositories:
+      - repo-a
+      permissions:
+        contents: read
 ```
 
 ## Future use

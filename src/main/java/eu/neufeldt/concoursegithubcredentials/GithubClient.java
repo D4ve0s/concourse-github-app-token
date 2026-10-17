@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.Date;
 
 import static java.net.http.HttpRequest.BodyPublishers.noBody;
+import static java.net.http.HttpRequest.BodyPublishers.ofString;
 
 public class GithubClient {
     private final String baseUrl;
@@ -39,6 +40,19 @@ public class GithubClient {
 
     public <T> T call(String method, String path, Class<T> clazz) throws IOException, InterruptedException {
         HttpRequest request = baseRequest.method(method, noBody()).uri(URI.create(baseUrl + path)).build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() >= 200 && response.statusCode() <= 299) {
+            return new Gson().fromJson(response.body(), clazz);
+        } else {
+            throw new RuntimeException(response.statusCode() + " when calling " + baseUrl + path);
+        }
+    }
+
+    public <T> T call(String method, String path, String jsonBody, Class<T> clazz) throws IOException, InterruptedException {
+        HttpRequest request = baseRequest
+                .method(method, ofString(jsonBody))
+                .header("Content-Type", "application/json")
+                .uri(URI.create(baseUrl + path)).build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() >= 200 && response.statusCode() <= 299) {
             return new Gson().fromJson(response.body(), clazz);

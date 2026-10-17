@@ -1,3 +1,11 @@
+# Build artifacts
 .gradle
 build
+bin
+
+# Editors / IDEs
 .idea
+.vscode
+
+# Local agent skills (.github workflows themselves stay tracked)
+.github/skills/

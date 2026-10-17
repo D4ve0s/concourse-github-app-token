@@ -1,6 +1,9 @@
 package eu.neufeldt.concoursegithubcredentials.in;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import eu.neufeldt.concoursegithubcredentials.GithubClient;
 import eu.neufeldt.concoursegithubcredentials.model.InRequest;
 import eu.neufeldt.concoursegithubcredentials.model.TokenResponse;
@@ -27,7 +30,21 @@ public class In {
 
     public String getToken(InRequest request, String destinationDirectory) throws IOException, InterruptedException {
         int installationId = installationIdFinder.find(request.source.user, request.source.org);
-        TokenResponse tokenResponse = client.call("POST", "app/installations/" + installationId + "/access_tokens", TokenResponse.class);
+        JsonElement repositories = request.source.repositories;
+        JsonElement permissions = request.source.permissions;
+        if (request.params != null) {
+            if (request.params.repositories != null) repositories = request.params.repositories;
+            if (request.params.permissions != null) permissions = request.params.permissions;
+        }
+        TokenResponse tokenResponse;
+        if (repositories != null || permissions != null) {
+            JsonObject body = new JsonObject();
+            if (repositories != null) body.add("repositories", repositories);
+            if (permissions != null) body.add("permissions", permissions);
+            tokenResponse = client.call("POST", "app/installations/" + installationId + "/access_tokens", GSON.toJson(body), TokenResponse.class);
+        } else {
+            tokenResponse = client.call("POST", "app/installations/" + installationId + "/access_tokens", TokenResponse.class);
+        }
         Path path = fileSystem.getPath(destinationDirectory);
         Files.createDirectories(path);
         Path tokenFile = path.resolve("token");

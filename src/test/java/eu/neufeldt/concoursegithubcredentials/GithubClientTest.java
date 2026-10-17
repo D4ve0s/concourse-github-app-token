@@ -100,4 +100,23 @@ class GithubClientTest {
         assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIxMjMiLCJpYXQiOjE1OTU5MjEwNTksImV4cCI6MTU5NTkyMTY1OX0.dwCdlfjhmtSCK8L54Mcy1gTDLxnR3WR18vUYTUN6Ka8KEUjpXpXDB14ywUagJSLsUnJdeFRED4xisHf1whWQGDWN4FT7iQbxpuXeUpe_82RFGwshmnmSYKeh8hvwhAmoWxZqvggwPneWoP-BkcAMLbum5OHWQKqd2mEjlZSRR2cBqBcuZpW7IPYPMFRd6y5lEE9oKf9v9hZN6XSz81r-zekHk7-SRZF3CRKtMm-Nul0OOC_nbCgiPadgI7x_YngKHL7wlOdWXYsIw0Irs5FSkE2cSC9JyszEv_cKb0AY6jyBAQDCCt9kaTYt4EBbacJbaerwRI-s7U9m5ItjG8QDvA");
         assertThat(recordedRequest.getHeader("Accept")).isEqualTo("application/vnd.github.machine-man-preview+json");
     }
+
+    @Test
+    void withBody() throws GeneralSecurityException, IOException, InterruptedException {
+        // given
+        server.enqueue(new MockResponse().setBody("{\"date\":\"some-date\"}"));
+        GithubClient client = new GithubClient(server.url("").toString(), APP_ID, PRIVATE_KEY, NOW);
+        String body = "{\"repositories\":[\"repo-a\"],\"permissions\":{\"contents\":\"read\"}}";
+
+        // when
+        Version version = client.call("POST", "app/installations/123/access_tokens", body, Version.class);
+        RecordedRequest recordedRequest = server.takeRequest();
+
+        // then
+        assertThat(version.date).isEqualTo("some-date");
+        assertThat(recordedRequest.getPath()).isEqualTo("/app/installations/123/access_tokens");
+        assertThat(recordedRequest.getMethod()).isEqualTo("POST");
+        assertThat(recordedRequest.getBody().size()).isEqualTo(body.length());
+        assertThat(recordedRequest.getHeader("Content-Type")).isEqualTo("application/json");
+    }
 }

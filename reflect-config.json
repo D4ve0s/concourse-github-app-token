@@ -21,6 +21,10 @@
       {
         "name": "version",
         "allowWrite": true
+      },
+      {
+        "name": "params",
+        "allowWrite": true
       }
     ],
     "methods": [
@@ -28,7 +32,8 @@
         "name": "<init>",
         "parameterTypes": [
           "eu.neufeldt.concoursegithubcredentials.model.InRequest$Source",
-          "eu.neufeldt.concoursegithubcredentials.model.Version"
+          "eu.neufeldt.concoursegithubcredentials.model.Version",
+          "eu.neufeldt.concoursegithubcredentials.model.InRequest$Params"
         ]
       }
     ]
@@ -51,6 +56,14 @@
       {
         "name": "org",
         "allowWrite": true
+      },
+      {
+        "name": "repositories",
+        "allowWrite": true
+      },
+      {
+        "name": "permissions",
+        "allowWrite": true
       }
     ],
     "methods": [
@@ -60,7 +73,31 @@
           "int",
           "java.lang.String",
           "java.lang.String",
-          "java.lang.String"
+          "java.lang.String",
+          "com.google.gson.JsonArray",
+          "com.google.gson.JsonObject"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "eu.neufeldt.concoursegithubcredentials.model.InRequest$Params",
+    "fields": [
+      {
+        "name": "repositories",
+        "allowWrite": true
+      },
+      {
+        "name": "permissions",
+        "allowWrite": true
+      }
+    ],
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "com.google.gson.JsonArray",
+          "com.google.gson.JsonObject"
         ]
       }
     ]
