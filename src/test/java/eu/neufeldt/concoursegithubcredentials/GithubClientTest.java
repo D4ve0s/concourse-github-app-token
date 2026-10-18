@@ -119,4 +119,64 @@ class GithubClientTest {
         assertThat(recordedRequest.getBody().size()).isEqualTo(body.length());
         assertThat(recordedRequest.getHeader("Content-Type")).isEqualTo("application/json");
     }
+
+    @Test
+    void transientThenSuccess() throws GeneralSecurityException, IOException, InterruptedException {
+        // given
+        server.enqueue(new MockResponse().setResponseCode(502));
+        server.enqueue(new MockResponse().setBody("{\"date\":\"some-date\"}"));
+        GithubClient client = new GithubClient(server.url("").toString(), APP_ID, PRIVATE_KEY, NOW);
+
+        // when
+        Version version = client.call("GET", "app/installations/123/access_tokens", Version.class);
+        RecordedRequest firstRequest = server.takeRequest();
+        RecordedRequest secondRequest = server.takeRequest();
+
+        // then
+        assertThat(version.date).isEqualTo("some-date");
+        assertThat(firstRequest.getPath()).isEqualTo("/app/installations/123/access_tokens");
+        assertThat(secondRequest.getPath()).isEqualTo("/app/installations/123/access_tokens");
+    }
+
+    @Test
+    void retryAfterThenSuccess() throws GeneralSecurityException, IOException, InterruptedException {
+        // given
+        server.enqueue(new MockResponse().setResponseCode(429).addHeader("Retry-After: 1"));
+        server.enqueue(new MockResponse().setBody("{\"date\":\"some-date\"}"));
+        GithubClient client = new GithubClient(server.url("").toString(), APP_ID, PRIVATE_KEY, NOW);
+
+        // when
+        Version version = client.call("GET", "app/installations/123/access_tokens", Version.class);
+        RecordedRequest firstRequest = server.takeRequest();
+        RecordedRequest secondRequest = server.takeRequest();
+
+        // then
+        assertThat(version.date).isEqualTo("some-date");
+        assertThat(firstRequest.getPath()).isEqualTo("/app/installations/123/access_tokens");
+        assertThat(secondRequest.getPath()).isEqualTo("/app/installations/123/access_tokens");
+    }
+
+    @Test
+    void retriesExhausted() throws GeneralSecurityException, IOException, InterruptedException {
+        // given
+        server.enqueue(new MockResponse().setResponseCode(429));
+        server.enqueue(new MockResponse().setResponseCode(502));
+        server.enqueue(new MockResponse().setResponseCode(503));
+        server.enqueue(new MockResponse().setResponseCode(500));
+        String baseUrl = server.url("").toString();
+        GithubClient client = new GithubClient(baseUrl, APP_ID, PRIVATE_KEY, NOW);
+
+        // when
+        var throwableAssert = assertThatThrownBy(() -> client.call("GET", "path", Version.class));
+
+        // then
+        throwableAssert
+                .isInstanceOf(RuntimeException.class)
+                .withFailMessage("500 when calling " + baseUrl + "path")
+                .hasNoCause();
+        assertThat(server.takeRequest()).isNotNull();
+        assertThat(server.takeRequest()).isNotNull();
+        assertThat(server.takeRequest()).isNotNull();
+        assertThat(server.takeRequest()).isNotNull();
+    }
 }

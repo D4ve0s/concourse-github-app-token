@@ -22,6 +22,8 @@ public class GithubClient {
     private final String baseUrl;
     private final HttpClient client;
     private final HttpRequest.Builder baseRequest;
+    private static final int MAX_RETRIES = 3;
+    private static final long MAX_RETRY_DELAY_MS = 60_000L;
 
     public GithubClient(String baseUrl, int appId, String privateKey, Instant now) throws GeneralSecurityException {
         this.baseUrl = baseUrl;
@@ -40,12 +42,7 @@ public class GithubClient {
 
     public <T> T call(String method, String path, Class<T> clazz) throws IOException, InterruptedException {
         HttpRequest request = baseRequest.method(method, noBody()).uri(URI.create(baseUrl + path)).build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() >= 200 && response.statusCode() <= 299) {
-            return new Gson().fromJson(response.body(), clazz);
-        } else {
-            throw new RuntimeException(response.statusCode() + " when calling " + baseUrl + path);
-        }
+        return send(request, path, clazz);
     }
 
     public <T> T call(String method, String path, String jsonBody, Class<T> clazz) throws IOException, InterruptedException {
@@ -53,11 +50,32 @@ public class GithubClient {
                 .method(method, ofString(jsonBody))
                 .header("Content-Type", "application/json")
                 .uri(URI.create(baseUrl + path)).build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() >= 200 && response.statusCode() <= 299) {
-            return new Gson().fromJson(response.body(), clazz);
-        } else {
-            throw new RuntimeException(response.statusCode() + " when calling " + baseUrl + path);
+        return send(request, path, clazz);
+    }
+
+    // GitHub documents 429 and 5xx as transient failures worth retrying; other non-2xx are permanent.
+    private <T> T send(HttpRequest request, String path, Class<T> clazz) throws IOException, InterruptedException {
+        var attempt = 0;
+        while (true) {
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            var status = response.statusCode();
+            var retryable = status == 429 || status >= 500;
+            if (!retryable || attempt == MAX_RETRIES) {
+                if (status >= 200 && status <= 299) {
+                    return new Gson().fromJson(response.body(), clazz);
+                }
+                throw new RuntimeException(status + " when calling " + baseUrl + path);
+            }
+            Thread.sleep(retryDelayMillis(response, attempt));
+            attempt++;
         }
+    }
+
+    private static long retryDelayMillis(HttpResponse<String> response, int attempt) {
+        var retryAfterSeconds = response.headers().firstValueAsLong("Retry-After");
+        if (retryAfterSeconds.isPresent() && retryAfterSeconds.getAsLong() >= 0) {
+            return Math.min(MAX_RETRY_DELAY_MS, 1000L * retryAfterSeconds.getAsLong());
+        }
+        return Math.min(MAX_RETRY_DELAY_MS, 1000L << attempt);
     }
 }
