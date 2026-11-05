@@ -9,14 +9,14 @@ repositories {
 
 dependencies {
     implementation("commons-io:commons-io:2.22.0")
-    implementation("com.auth0:java-jwt:4.6.1")
-    implementation("com.google.code.gson:gson:2.14.0")
+    implementation("com.auth0:java-jwt:4.6.2")
+    implementation("com.google.code.gson:gson:2.15.0")
     implementation("org.json:json:20260814")
     testImplementation(platform("org.junit:junit-bom:6.1.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.assertj:assertj-core:3.27.7")
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.5.0")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.5.1")
     testImplementation("com.google.jimfs:jimfs:1.3.2")
     testImplementation("org.mockito:mockito-core:5.24.0")
 }
